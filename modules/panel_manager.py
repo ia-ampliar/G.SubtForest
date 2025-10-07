@@ -9,22 +9,32 @@ class PanelManager:
     Classe para gerenciar painéis genéticos e carregar dados JSON.
     """
     
-    def __init__(self):
+    def __init__(self, default_json_path=None):
         """
         Inicializa o PanelManager.
+
+        Args:
+            default_json_path (str, optional): Caminho padrão para genetic_panels.json. Se None, usa o arquivo na raiz do projeto.
         """
-        pass
+        if default_json_path is None:
+            # Usa genetic_panels.json na raiz do projeto (um nível acima de modules)
+            project_root = os.path.dirname(os.path.dirname(__file__))
+            default_json_path = os.path.join(project_root, 'genetic_panels.json')
+        self.default_json_path = default_json_path
     
-    def load_panels_from_json(self, json_path):
+    def load_panels_from_json(self, json_path=None):
         """
         Carrega painéis genéticos de um arquivo JSON.
         
         Args:
-            json_path (str): Caminho para o arquivo JSON
+            json_path (str, optional): Caminho para o arquivo JSON. Se None, usa o caminho padrão.
             
         Returns:
             dict: Dicionário com os painéis genéticos
         """
+        if json_path is None:
+            json_path = self.default_json_path
+
         if not os.path.exists(json_path):
             raise FileNotFoundError(f"Arquivo JSON não encontrado: {json_path}")
             
@@ -32,6 +42,12 @@ class PanelManager:
             panels = json.load(f)
             
         return panels
+
+    def load_default_panels(self):
+        """
+        Carrega os painéis usando o caminho padrão configurado no manager.
+        """
+        return self.load_panels_from_json(self.default_json_path)
     
     def get_panel_genes(self, panels, panel_name):
         """

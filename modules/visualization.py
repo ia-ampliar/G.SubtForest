@@ -258,6 +258,81 @@ class Visualization:
         
         plt.tight_layout()
         return fig
+
+    def plot_avg_classification_report_heatmap(self, avg_report, classes=None, title='Métricas Médias por Classe', figsize=(8, 6)):
+        """
+        Plota um heatmap das métricas médias (precision, recall, f1-score) por classe
+        usando o relatório de classificação médio (output_dict=True) calculado.
+
+        Args:
+            avg_report (dict): Relatório médio com chaves das classes e métricas
+            classes (list, optional): Ordem das classes; se None tenta inferir ['cin','ebv','gs','msi'] ou as chaves presentes
+            title (str): Título do gráfico
+            figsize (tuple): Tamanho da figura
+
+        Returns:
+            matplotlib.figure.Figure: Figura gerada
+        """
+        if classes is None:
+            default_order = ['cin', 'ebv', 'gs', 'msi']
+            # Usa a interseção com as chaves disponíveis
+            classes = [c for c in default_order if c in avg_report]
+            if not classes:
+                # fallback: todas as chaves que possuem dict de métricas
+                classes = [k for k, v in avg_report.items() if isinstance(v, dict) and all(m in v for m in ['precision','recall','f1-score'])]
+
+        # Construir DataFrame
+        data = []
+        for cls in classes:
+            metrics_dict = avg_report.get(cls, {})
+            data.append({
+                'Classe': cls,
+                'precision': metrics_dict.get('precision', np.nan),
+                'recall': metrics_dict.get('recall', np.nan),
+                'f1-score': metrics_dict.get('f1-score', np.nan),
+            })
+        df = pd.DataFrame(data).set_index('Classe')
+
+        fig, ax = plt.subplots(figsize=figsize)
+        sns.heatmap(df, annot=True, fmt='.2f', cmap='Blues', vmin=0, vmax=1, ax=ax)
+        ax.set_title(title)
+        plt.tight_layout()
+        return fig
+
+    def plot_avg_metrics_bar(self, avg_report, include_accuracy=True, title='Métricas Médias (Macro/Weighted)', figsize=(10, 6)):
+        """
+        Plota um gráfico de barras das métricas médias macro e weighted (precision, recall, f1-score).
+        Opcionalmente inclui accuracy global.
+
+        Args:
+            avg_report (dict): Relatório médio com chaves 'macro avg', 'weighted avg' e 'accuracy'
+            include_accuracy (bool): Se True, inclui barra de accuracy
+            title (str): Título do gráfico
+            figsize (tuple): Tamanho da figura
+
+        Returns:
+            matplotlib.figure.Figure: Figura gerada
+        """
+        rows = []
+        for label in ['macro avg', 'weighted avg']:
+            metrics = avg_report.get(label, {})
+            if metrics:
+                rows.append({'Tipo': label, 'precision': metrics.get('precision', np.nan), 'recall': metrics.get('recall', np.nan), 'f1-score': metrics.get('f1-score', np.nan)})
+
+        df = pd.DataFrame(rows).set_index('Tipo')
+
+        fig, ax = plt.subplots(figsize=figsize)
+        df.plot(kind='bar', ax=ax)
+        if include_accuracy and 'accuracy' in avg_report:
+            acc = avg_report['accuracy']
+            ax.axhline(y=acc, color='red', linestyle='--', label=f'Accuracy {acc:.2f}')
+            ax.legend(loc='best')
+        ax.set_ylim(0, 1)
+        ax.set_ylabel('Valor')
+        ax.set_xlabel('Tipo de Média')
+        ax.set_title(title)
+        plt.tight_layout()
+        return fig
     
     def plot_shap_values_per_subtype(self, shap_values, X, y, subtype, max_display=10, title=None, figsize=(12, 8)):
         """
